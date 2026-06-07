@@ -3,15 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>موقعي الأول</title>
+    <title>لعبة تخمين الرقم</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background-color: #f0f2f5; padding: 50px; }
-        h1 { color: #007bff; }
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #222; color: #fff; padding: 50px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #28a745; color: white; border: none; border-radius: 50px; }
+        input { padding: 10px; font-size: 16px; text-align: center; width: 80px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-    <h1>أهلاً بك في موقعي الإلكتروني الأول! 🎉</h1>
-    <p>تم تشغيل الموقع بنجاح بواسطة GitHub Pages.</p>
+    <h1>🎮 لعبة تخمين الرقم السري</h1>
+    <p>لقد اخترت رقماً بين 1 و 10، هل يمكنك تخمينه؟</p>
+    
+    <input type="number" id="guess" min="1" max="10"><br>
+    <button onclick="checkGuess()">تخمين</button>
+    
+    <p id="result"></p>
+
+    <script>
+        // كمبيوتر يختار رقم عشوائي بين 1 و 10
+        const randomNumber = Math.floor(Math.random() * 10) + 1;
+
+        function checkGuess() {
+            const userGuess = document.getElementById('guess').value;
+            const resultText = document.getElementById('result');
+            
+            if (userGuess == randomNumber) {
+                resultText.innerHTML = "🎉 مبروك! خمنت الرقم الصحيح!";
+                resultText.style.color = "#28a745";
+            } else if (userGuess > randomNumber) {
+                resultText.innerHTML = "❌ الرقم كبير جداً، جرب رقماً أصغر.";
+                resultText.style.color = "#dc3545";
+            } else {
+                resultText.innerHTML = "❌ الرقم صغير جداً، جرب رقماً أكبر.";
+                resultText.style.color = "#dc3545";
+            }
+        }
+    </script>
 </body>
 </html>
-
