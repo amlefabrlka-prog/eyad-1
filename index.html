@@ -3,170 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🛸 حرب الفضاء المدمرة</title>
+    <title>🐦 مغامرة الطائر القافز</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background-color: #0b0b1a; color: #fff; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
-        h1 { margin: 5px 0; color: #00e5ff; font-size: 22px; text-shadow: 0 0 10px #00e5ff; }
-        #stats { display: flex; gap: 20px; font-size: 16px; margin-bottom: 10px; font-weight: bold; }
-        #score { color: #ffeb3b; }
-        #health { color: #ff5252; }
-        canvas { background: radial-gradient(circle, #151530 0%, #050510 100%); border: 3px solid #00e5ff; border-radius: 8px; box-shadow: 0 0 20px rgba(0, 229, 255, 0.3); width: 320px; height: 350px; }
-        .controls { display: grid; grid-template-columns: repeat(3, 70px); grid-gap: 15px; margin-top: 15px; justify-content: center; width: 100%; }
-        .btn { width: 70px; height: 60px; background-color: #222; color: white; border: 2px solid #00e5ff; border-radius: 10px; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
-        .btn:active { background-color: #00e5ff; }
-        .shoot-btn { grid-column: 2; background-color: #ff5252; border-color: #ff5252; }
-        .shoot-btn:active { background-color: #ff1744; }
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #4ec0ca; color: #fff; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
+        h1 { margin: 5px 0; color: #fff; font-size: 24px; text-shadow: 2px 2px 5px #333; }
+        #score-board { font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #fff; text-shadow: 1px 1px 3px #000; }
+        canvas { background-color: #70c5ce; border: 4px solid #fff; border-radius: 10px; box-shadow: 0 8px 15px rgba(0,0,0,0.2); width: 320px; height: 380px; }
+        .controls { margin-top: 15px; width: 100%; display: flex; justify-content: center; }
+        .jump-btn { width: 120px; height: 60px; background-color: #ff9800; color: white; border: 3px solid #fff; border-radius: 50px; font-size: 22px; font-weight: bold; cursor: pointer; box-shadow: 0 4px #e65100; -webkit-tap-highlight-color: transparent; }
+        .jump-btn:active { background-color: #e65100; box-shadow: 0 2px #e65100; transform: translateY(2px); }
     </style>
 </head>
 <body>
 
-    <h1>🚀 حرب الفضاء المجنونة</h1>
-    <div id="stats">
-        <div>النقاط: <span id="score">0</span></div>
-        <div>الصحة: <span id="health">100%</span></div>
-    </div>
+    <h1>🐦 الطائر القافز المحترف</h1>
+    <div id="score-board">النقاط: <span id="score">0</span></div>
 
-    <!-- ساحة المعركة -->
-    <canvas id="spaceCanvas" width="400" height="450"></canvas>
+    <!-- ساحة اللعبة -->
+    <canvas id="birdCanvas" width="360" height="420"></canvas>
 
-    <!-- أزرار التحكم للموبايل -->
+    <!-- زر القفز الكبير للموبايل -->
     <div class="controls">
-        <button class="btn" onclick="moveShip(-20)">⬅️</button>
-        <button class="btn shoot-btn" onclick="shootLaser()">🔥</button>
-        <button class="btn" onclick="moveShip(20)">➡️</button>
+        <button class="jump-btn" onclick="birdJump()">قفز! 🚀</button>
     </div>
 
     <script>
-        const canvas = document.getElementById("spaceCanvas");
+        const canvas = document.getElementById("birdCanvas");
         const ctx = canvas.getContext("2d");
 
         let score = 0;
-        let health = 100;
-
-        // مركبتك الفضائية
-        const player = { x: canvas.width / 2 - 20, y: canvas.height - 60, width: 40, height: 40, color: "#00e5ff" };
-
-        let lasers = [];
-        let enemies = [];
         let gameInterval;
+        let gameOver = false;
 
-        // تحريك المركبة يميناً ويساراً من الأزرار
-        function moveShip(dir) {
-            player.x += dir;
-            if (player.x < 0) player.x = 0;
-            if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
+        // إعدادات الطائر
+        const bird = { x: 50, y: 150, width: 24, height: 24, gravity: 0.4, velocity: 0, jump: -6.5 };
+
+        // إعدادات الأنابيب
+        let pipes = [];
+        const pipeWidth = 50;
+        const pipeGap = 110; // الفتحة بين الأنبوب العلوي والسفلي
+        const pipeSpeed = 2;
+
+        function createPipe() {
+            // تحديد طول عشوائي للأنبوب العلوي
+            let topHeight = Math.floor(Math.random() * (canvas.height - pipeGap - 80)) + 30;
+            pipes.push({ x: canvas.width, top: topHeight, bottom: canvas.height - topHeight - pipeGap });
         }
 
-        // إطلاق الليزر عند الضغط على زر النار
-        function shootLaser() {
-            lasers.push({ x: player.x + player.width / 2 - 3, y: player.y, width: 6, height: 15, color: "#ff5252" });
-        }
-
-        // توليد الأعداء بشكل عشوائي من الأعلى
-        function createEnemy() {
-            if (Math.random() < 0.04) {
-                let size = 30;
-                let x = Math.random() * (canvas.width - size);
-                enemies.push({ x: x, y: -size, width: size, height: size, color: "#aeea00", speed: 2 + Math.random() * 2 });
+        // جعل الطائر يقفز عند الضغط على الزر
+        function birdJump() {
+            if (gameOver) {
+                resetGame();
+            } else {
+                bird.velocity = bird.jump;
             }
         }
 
         function update() {
-            createEnemy();
+            if (gameOver) return;
 
-            // تحريك الليزر للأعلى وحذفه إذا خرج من الشاشة
-            lasers.forEach((laser, lIndex) => {
-                laser.y -= 7;
-                if (laser.y < 0) lasers.splice(lIndex, 1);
-            });
+            // تطبيق الجاذبية على الطائر
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
 
-            // تحريك الأعداء للأسفل
-            enemies.forEach((enemy, eIndex) => {
-                enemy.y += enemy.speed;
-
-                // إذا وصل العدو لأسفل الشاشة (تخطي خط دفاعك)
-                if (enemy.y > canvas.height) {
-                    enemies.splice(eIndex, 1);
-                    health -= 10;
-                    updateStats();
-                }
-
-                // اصطدام العدو بمركبتك مباشرة
-                if (checkCollision(player, enemy)) {
-                    enemies.splice(eIndex, 1);
-                    health -= 20;
-                    updateStats();
-                }
-
-                // اصطدام الليزر بالعدو (تدميره)
-                lasers.forEach((laser, lIndex) => {
-                    if (checkCollision(laser, enemy)) {
-                        enemies.splice(eIndex, 1);
-                        lasers.splice(lIndex, 1);
-                        score += 10;
-                        updateStats();
-                    }
-                });
-            });
-
-            // التحقق من انتهاء اللعبة
-            if (health <= 0) {
-                clearInterval(gameInterval);
-                alert("تم تدمير مركبتك! مجموع نقاطك: " + score);
-                resetGame();
+            // التحقق من اصطدام الطائر بالأرض أو السقف
+            if (bird.y + bird.height >= canvas.height || bird.y <= 0) {
+                endGame();
             }
+
+            // توليد أنابيب جديدة كل فترة
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 160) {
+                createPipe();
+            }
+
+            // تحريك الأنابيب والتحقق من الاصطدام
+            pipes.forEach((pipe, index) => {
+                pipe.x -= pipeSpeed;
+
+                // حذف الأنبوب إذا خرج من الشاشة وزيادة النقاط
+                if (pipe.x + pipeWidth < 0) {
+                    pipes.splice(index, 1);
+                    score++;
+                    document.getElementById("score").innerText = score;
+                }
+
+                // التحقق من اصطدام الطائر بالأنبوب العلوي أو السفلي
+                if (
+                    bird.x + bird.width > pipe.x &&
+                    bird.x < pipe.x + pipeWidth &&
+                    (bird.y < pipe.top || bird.y + bird.height > canvas.height - pipe.bottom)
+                ) {
+                    endGame();
+                }
+            });
         }
 
-        // دالة رسم العناصر
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // رسم مركبة اللاعب (شكل مثلثي متطور)
-            ctx.fillStyle = player.color;
+            // رسم الأنابيب (لون أخضر مميز)
+            pipes.forEach(pipe => {
+                ctx.fillStyle = "#73bf2f";
+                // الأنبوب العلوي
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+                ctx.strokeStyle = "#538a1e";
+                ctx.lineWidth = 3;
+                ctx.strokeRect(pipe.x, 0, pipeWidth, pipe.top);
+
+                // الأنبوب السفلي
+                ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipeWidth, pipe.bottom);
+                ctx.strokeRect(pipe.x, canvas.height - pipe.bottom, pipeWidth, pipe.bottom);
+            });
+
+            // رسم الطائر (دائرة صفراء مبهجة ومنقار برتقالي)
+            ctx.fillStyle = "#f3e11d";
             ctx.beginPath();
-            ctx.moveTo(player.x + player.width / 2, player.y);
-            ctx.lineTo(player.x, player.y + player.height);
-            ctx.lineTo(player.x + player.width, player.y + player.height);
-            ctx.closePath();
+            ctx.arc(bird.x + bird.width/2, bird.y + bird.height/2, bird.width/2, 0, Math.PI * 2);
             ctx.fill();
+            ctx.strokeStyle = "#d49100";
+            ctx.stroke();
 
-            // رسم الليزر
-            lasers.forEach(laser => {
-                ctx.fillStyle = laser.color;
-                ctx.fillRect(laser.x, laser.y, laser.width, laser.height);
-            });
-
-            // رسم الأعداء (الوحوش الفضائية)
-            enemies.forEach(enemy => {
-                ctx.fillStyle = enemy.color;
-                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-                // ملامح بسيطة للوحش
-                ctx.fillStyle = "#000";
-                ctx.fillRect(enemy.x + 5, enemy.y + 8, 5, 5);
-                ctx.fillRect(enemy.x + 20, enemy.y + 8, 5, 5);
-            });
+            // العين والمنقار
+            ctx.fillStyle = "#fff";
+            ctx.beginPath();
+            ctx.arc(bird.x + 16, bird.y + 8, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#ff6f00";
+            ctx.fillRect(bird.x + 18, bird.y + 10, 8, 5);
         }
 
-        // دالة التحقق من التصادم بين عنصرين
-        function checkCollision(rect1, rect2) {
-            return rect1.x < rect2.x + rect2.width &&
-                   rect1.x + rect1.width > rect2.x &&
-                   rect1.y < rect2.y + rect2.height &&
-                   rect1.y + rect1.height > rect2.y;
-        }
-
-        function updateStats() {
-            document.getElementById("score").innerText = score;
-            document.getElementById("health").innerText = Math.max(0, health) + "%";
+        function endGame() {
+            gameOver = true;
+            clearInterval(gameInterval);
+            alert("سقط الطائر! 😢 مجموع نقاطك: " + score + "\nاضغط على الزر مجدداً لإعادة اللعب.");
         }
 
         function resetGame() {
             score = 0;
-            health = 100;
-            lasers = [];
-            enemies = [];
-            player.x = canvas.width / 2 - 20;
-            updateStats();
+            gameOver = false;
+            bird.y = 150;
+            bird.velocity = 0;
+            pipes = [];
+            document.getElementById("score").innerText = score;
             gameInterval = setInterval(gameLoop, 1000 / 60);
         }
 
@@ -175,8 +153,8 @@
             draw();
         }
 
-        // بدء اللعبة
-        gameInterval = setInterval(gameLoop, 1000 / 60);
+        // بدء اللعبة لأول مرة
+        resetGame();
     </script>
 </body>
 </html>
