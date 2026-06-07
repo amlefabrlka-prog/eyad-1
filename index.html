@@ -3,28 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐦 مغامرة الطائر القافز</title>
+    <title>Flappy Bird Game</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background-color: #4ec0ca; color: #fff; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
-        h1 { margin: 5px 0; color: #fff; font-size: 24px; text-shadow: 2px 2px 5px #333; }
-        #score-board { font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #fff; text-shadow: 1px 1px 3px #000; }
-        canvas { background-color: #70c5ce; border: 4px solid #fff; border-radius: 10px; box-shadow: 0 8px 15px rgba(0,0,0,0.2); width: 320px; height: 380px; }
-        .controls { margin-top: 15px; width: 100%; display: flex; justify-content: center; }
-        .jump-btn { width: 120px; height: 60px; background-color: #ff9800; color: white; border: 3px solid #fff; border-radius: 50px; font-size: 22px; font-weight: bold; cursor: pointer; box-shadow: 0 4px #e65100; -webkit-tap-highlight-color: transparent; }
-        .jump-btn:active { background-color: #e65100; box-shadow: 0 2px #e65100; transform: translateY(2px); }
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #4ec0ca; color: #fff; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        h1 { margin: 5px; text-shadow: 2px 2px #333; font-size: 24px; }
+        canvas { background-color: #70c5ce; border: 4px solid #fff; border-radius: 10px; width: 320px; height: 380px; }
+        .controls { margin-top: 15px; }
+        .jump-btn { width: 130px; height: 60px; background-color: #ff9800; color: white; border: 3px solid #fff; border-radius: 50px; font-size: 22px; font-weight: bold; cursor: pointer; box-shadow: 0 4px #e65100; }
+        .jump-btn:active { transform: translateY(2px); box-shadow: 0 2px #e65100; }
     </style>
 </head>
 <body>
 
-    <h1>🐦 الطائر القافز المحترف</h1>
-    <div id="score-board">النقاط: <span id="score">0</span></div>
+    <h1>🐦 مغامرة الطائر القافز</h1>
+    <div style="font-size: 20px; font-weight: bold; margin-bottom: 10px; text-shadow: 1px 1px #000;">النقاط: <span id="score">0</span></div>
 
-    <!-- ساحة اللعبة -->
     <canvas id="birdCanvas" width="360" height="420"></canvas>
 
-    <!-- زر القفز الكبير للموبايل -->
     <div class="controls">
-        <button class="jump-btn" onclick="birdJump()">قفز! 🚀</button>
+        <button class="jump-btn" onclick="jump()">قفز! 🚀</button>
     </div>
 
     <script>
@@ -32,129 +29,45 @@
         const ctx = canvas.getContext("2d");
 
         let score = 0;
-        let gameInterval;
         let gameOver = false;
-
-        // إعدادات الطائر
-        const bird = { x: 50, y: 150, width: 24, height: 24, gravity: 0.4, velocity: 0, jump: -6.5 };
-
-        // إعدادات الأنابيب
+        let bird = { x: 50, y: 150, w: 24, h: 24, g: 0.4, v: 0, j: -6.5 };
         let pipes = [];
-        const pipeWidth = 50;
-        const pipeGap = 110; // الفتحة بين الأنبوب العلوي والسفلي
-        const pipeSpeed = 2;
+        const pWidth = 50;
+        const pGap = 120;
+        const pSpeed = 2;
 
-        function createPipe() {
-            // تحديد طول عشوائي للأنبوب العلوي
-            let topHeight = Math.floor(Math.random() * (canvas.height - pipeGap - 80)) + 30;
-            pipes.push({ x: canvas.width, top: topHeight, bottom: canvas.height - topHeight - pipeGap });
+        function makePipe() {
+            let topH = Math.floor(Math.random() * (canvas.height - pGap - 80)) + 30;
+            pipes.push({ x: canvas.width, top: topH, bottom: canvas.height - topH - pGap });
         }
 
-        // جعل الطائر يقفز عند الضغط على الزر
-        function birdJump() {
+        function jump() {
             if (gameOver) {
-                resetGame();
+                reset();
             } else {
-                bird.velocity = bird.jump;
+                bird.v = bird.j;
             }
         }
 
         function update() {
             if (gameOver) return;
 
-            // تطبيق الجاذبية على الطائر
-            bird.velocity += bird.gravity;
-            bird.y += bird.velocity;
+            bird.v += bird.g;
+            bird.y += bird.v;
 
-            // التحقق من اصطدام الطائر بالأرض أو السقف
-            if (bird.y + bird.height >= canvas.height || bird.y <= 0) {
-                endGame();
+            if (bird.y + bird.h >= canvas.height || bird.y <= 0) {
+                end();
             }
 
-            // توليد أنابيب جديدة كل فترة
             if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 160) {
-                createPipe();
+                makePipe();
             }
 
-            // تحريك الأنابيب والتحقق من الاصطدام
-            pipes.forEach((pipe, index) => {
-                pipe.x -= pipeSpeed;
+            pipes.forEach((p, i) => {
+                p.x -= pSpeed;
 
-                // حذف الأنبوب إذا خرج من الشاشة وزيادة النقاط
-                if (pipe.x + pipeWidth < 0) {
-                    pipes.splice(index, 1);
+                if (p.x + pWidth < 0) {
+                    pipes.splice(i, 1);
                     score++;
-                    document.getElementById("score").innerText = score;
-                }
-
-                // التحقق من اصطدام الطائر بالأنبوب العلوي أو السفلي
-                if (
-                    bird.x + bird.width > pipe.x &&
-                    bird.x < pipe.x + pipeWidth &&
-                    (bird.y < pipe.top || bird.y + bird.height > canvas.height - pipe.bottom)
-                ) {
-                    endGame();
-                }
-            });
-        }
-
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // رسم الأنابيب (لون أخضر مميز)
-            pipes.forEach(pipe => {
-                ctx.fillStyle = "#73bf2f";
-                // الأنبوب العلوي
-                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
-                ctx.strokeStyle = "#538a1e";
-                ctx.lineWidth = 3;
-                ctx.strokeRect(pipe.x, 0, pipeWidth, pipe.top);
-
-                // الأنبوب السفلي
-                ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipeWidth, pipe.bottom);
-                ctx.strokeRect(pipe.x, canvas.height - pipe.bottom, pipeWidth, pipe.bottom);
-            });
-
-            // رسم الطائر (دائرة صفراء مبهجة ومنقار برتقالي)
-            ctx.fillStyle = "#f3e11d";
-            ctx.beginPath();
-            ctx.arc(bird.x + bird.width/2, bird.y + bird.height/2, bird.width/2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = "#d49100";
-            ctx.stroke();
-
-            // العين والمنقار
-            ctx.fillStyle = "#fff";
-            ctx.beginPath();
-            ctx.arc(bird.x + 16, bird.y + 8, 4, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = "#ff6f00";
-            ctx.fillRect(bird.x + 18, bird.y + 10, 8, 5);
-        }
-
-        function endGame() {
-            gameOver = true;
-            clearInterval(gameInterval);
-            alert("سقط الطائر! 😢 مجموع نقاطك: " + score + "\nاضغط على الزر مجدداً لإعادة اللعب.");
-        }
-
-        function resetGame() {
-            score = 0;
-            gameOver = false;
-            bird.y = 150;
-            bird.velocity = 0;
-            pipes = [];
-            document.getElementById("score").innerText = score;
-            gameInterval = setInterval(gameLoop, 1000 / 60);
-        }
-
-        function gameLoop() {
-            update();
-            draw();
-        }
-
-        // بدء اللعبة لأول مرة
-        resetGame();
-    </script>
-</body>
-</html>
+                    document.getElementById("score").innerText =
+                        
