@@ -3,141 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لعبة الثعبان الممتعة 🐍</title>
+    <title>🛸 حرب الفضاء المدمرة</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background-color: #1a1a1a; color: #fff; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        h1 { margin-bottom: 5px; color: #4CAF50; font-size: 24px; }
-        #score-board { font-size: 18px; margin-bottom: 10px; }
-        canvas { background-color: #111; border: 4px solid #4CAF50; border-radius: 10px; box-shadow: 0 0 15px rgba(76, 175, 80, 0.5); width: 300px; height: 300px; }
-        .controls { display: grid; grid-template-columns: repeat(3, 60px); grid-gap: 10px; margin-top: 15px; justify-content: center; }
-        .btn { width: 60px; height: 60px; background-color: #333; color: white; border: 2px solid #4CAF50; border-radius: 50%; font-size: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
-        .btn:active { background-color: #4CAF50; }
-        .up { grid-column: 2; }
-        .left { grid-column: 1; }
-        .right { grid-column: 3; }
-        .down { grid-column: 2; }
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #0b0b1a; color: #fff; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
+        h1 { margin: 5px 0; color: #00e5ff; font-size: 22px; text-shadow: 0 0 10px #00e5ff; }
+        #stats { display: flex; gap: 20px; font-size: 16px; margin-bottom: 10px; font-weight: bold; }
+        #score { color: #ffeb3b; }
+        #health { color: #ff5252; }
+        canvas { background: radial-gradient(circle, #151530 0%, #050510 100%); border: 3px solid #00e5ff; border-radius: 8px; box-shadow: 0 0 20px rgba(0, 229, 255, 0.3); width: 320px; height: 350px; }
+        .controls { display: grid; grid-template-columns: repeat(3, 70px); grid-gap: 15px; margin-top: 15px; justify-content: center; width: 100%; }
+        .btn { width: 70px; height: 60px; background-color: #222; color: white; border: 2px solid #00e5ff; border-radius: 10px; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+        .btn:active { background-color: #00e5ff; }
+        .shoot-btn { grid-column: 2; background-color: #ff5252; border-color: #ff5252; }
+        .shoot-btn:active { background-color: #ff1744; }
     </style>
 </head>
 <body>
 
-    <h1>🐍 لعبة الثعبان المحترف</h1>
-    <div id="score-board">النقاط: <span id="score">0</span></div>
+    <h1>🚀 حرب الفضاء المجنونة</h1>
+    <div id="stats">
+        <div>النقاط: <span id="score">0</span></div>
+        <div>الصحة: <span id="health">100%</span></div>
+    </div>
 
-    <!-- ساحة اللعبة -->
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <!-- ساحة المعركة -->
+    <canvas id="spaceCanvas" width="400" height="450"></canvas>
 
-    <!-- أزرار التحكم مخصصة للموبايل -->
+    <!-- أزرار التحكم للموبايل -->
     <div class="controls">
-        <button class="btn up" onclick="changeDirection('UP')">⬆️</button>
-        <button class="btn left" onclick="changeDirection('LEFT')">⬅️</button>
-        <button class="btn right" onclick="changeDirection('RIGHT')">➡️</button>
-        <button class="btn down" onclick="changeDirection('DOWN')">⬇️</button>
+        <button class="btn" onclick="moveShip(-20)">⬅️</button>
+        <button class="btn shoot-btn" onclick="shootLaser()">🔥</button>
+        <button class="btn" onclick="moveShip(20)">➡️</button>
     </div>
 
     <script>
-        const canvas = document.getElementById("gameCanvas");
+        const canvas = document.getElementById("spaceCanvas");
         const ctx = canvas.getContext("2d");
-        const scale = 20;
-        const rows = canvas.height / scale;
-        const columns = canvas.width / scale;
 
-        let snake = [{x: 10 * scale, y: 10 * scale}];
-        let food = {x: 0, y: 0};
-        let d = "RIGHT";
         let score = 0;
-        let game;
+        let health = 100;
 
-        // توليد طعام في مكان عشوائي
-        function pickLocation() {
-            food.x = Math.floor(Math.random() * columns) * scale;
-            food.y = Math.floor(Math.random() * rows) * scale;
+        // مركبتك الفضائية
+        const player = { x: canvas.width / 2 - 20, y: canvas.height - 60, width: 40, height: 40, color: "#00e5ff" };
+
+        let lasers = [];
+        let enemies = [];
+        let gameInterval;
+
+        // تحريك المركبة يميناً ويساراً من الأزرار
+        function moveShip(dir) {
+            player.x += dir;
+            if (player.x < 0) player.x = 0;
+            if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
         }
 
-        // تشغيل اللعبة والسرعة (كلما قل الرقم زادت السرعة)
-        function startGame() {
-            pickLocation();
-            game = setInterval(draw, 120);
+        // إطلاق الليزر عند الضغط على زر النار
+        function shootLaser() {
+            lasers.push({ x: player.x + player.width / 2 - 3, y: player.y, width: 6, height: 15, color: "#ff5252" });
         }
 
-        // توجيه الحركة من أزرار الشاشة
-        function changeDirection(direction) {
-            if (direction === "LEFT" && d !== "RIGHT") d = "LEFT";
-            if (direction === "UP" && d !== "DOWN") d = "UP";
-            if (direction === "RIGHT" && d !== "LEFT") d = "RIGHT";
-            if (direction === "DOWN" && d !== "UP") d = "DOWN";
+        // توليد الأعداء بشكل عشوائي من الأعلى
+        function createEnemy() {
+            if (Math.random() < 0.04) {
+                let size = 30;
+                let x = Math.random() * (canvas.width - size);
+                enemies.push({ x: x, y: -size, width: size, height: size, color: "#aeea00", speed: 2 + Math.random() * 2 });
+            }
         }
 
-        // رسم كل العناصر وتحريكها
+        function update() {
+            createEnemy();
+
+            // تحريك الليزر للأعلى وحذفه إذا خرج من الشاشة
+            lasers.forEach((laser, lIndex) => {
+                laser.y -= 7;
+                if (laser.y < 0) lasers.splice(lIndex, 1);
+            });
+
+            // تحريك الأعداء للأسفل
+            enemies.forEach((enemy, eIndex) => {
+                enemy.y += enemy.speed;
+
+                // إذا وصل العدو لأسفل الشاشة (تخطي خط دفاعك)
+                if (enemy.y > canvas.height) {
+                    enemies.splice(eIndex, 1);
+                    health -= 10;
+                    updateStats();
+                }
+
+                // اصطدام العدو بمركبتك مباشرة
+                if (checkCollision(player, enemy)) {
+                    enemies.splice(eIndex, 1);
+                    health -= 20;
+                    updateStats();
+                }
+
+                // اصطدام الليزر بالعدو (تدميره)
+                lasers.forEach((laser, lIndex) => {
+                    if (checkCollision(laser, enemy)) {
+                        enemies.splice(eIndex, 1);
+                        lasers.splice(lIndex, 1);
+                        score += 10;
+                        updateStats();
+                    }
+                });
+            });
+
+            // التحقق من انتهاء اللعبة
+            if (health <= 0) {
+                clearInterval(gameInterval);
+                alert("تم تدمير مركبتك! مجموع نقاطك: " + score);
+                resetGame();
+            }
+        }
+
+        // دالة رسم العناصر
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // رسم الطعام
-            ctx.fillStyle = "#FF5722";
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = "#FF5722";
-            ctx.fillRect(food.x, food.y, scale, scale);
-            ctx.shadowBlur = 0; // إعادة ضبط التوهج
+            // رسم مركبة اللاعب (شكل مثلثي متطور)
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.moveTo(player.x + player.width / 2, player.y);
+            ctx.lineTo(player.x, player.y + player.height);
+            ctx.lineTo(player.x + player.width, player.y + player.height);
+            ctx.closePath();
+            ctx.fill();
 
-            // رسم الثعبان
-            for (let i = 0; i < snake.length; i++) {
-                ctx.fillStyle = (i === 0) ? "#2E7D32" : "#4CAF50"; // الرأس أغمق
-                ctx.fillRect(snake[i].x, snake[i].y, scale, scale);
-                ctx.strokeStyle = "#111";
-                ctx.strokeRect(snake[i].x, snake[i].y, scale, scale);
-            }
+            // رسم الليزر
+            lasers.forEach(laser => {
+                ctx.fillStyle = laser.color;
+                ctx.fillRect(laser.x, laser.y, laser.width, laser.height);
+            });
 
-            // موقع رأس الثعبان الحالي
-            let snakeX = snake[0].x;
-            let snakeY = snake[0].y;
-
-            // تحديد الاتجاه الجديد
-            if (d === "LEFT") snakeX -= scale;
-            if (d === "UP") snakeY -= scale;
-            if (d === "RIGHT") snakeX += scale;
-            if (d === "DOWN") snakeY += scale;
-
-            // إذا أكل الثعبان التفاحة
-            if (snakeX === food.x && snakeY === food.y) {
-                score++;
-                document.getElementById("score").innerText = score;
-                pickLocation();
-            } else {
-                snake.pop(); // حذف الذيل للحفاظ على الطول إذا لم يأكل
-            }
-
-            // إضافة رأس جديد في الاتجاه الجديد
-            let newHead = { x: snakeX, y: snakeY };
-
-            // قوانين الخسارة (ضرب الحائط أو ضرب نفسه)
-            if (snakeX < 0 || snakeX >= canvas.width || snakeY < 0 || snakeY >= canvas.height || collision(newHead, snake)) {
-                clearInterval(game);
-                alert("Game Over! مجموع نقاطك: " + score);
-                resetGame();
-                return;
-            }
-
-            snake.unshift(newHead);
+            // رسم الأعداء (الوحوش الفضائية)
+            enemies.forEach(enemy => {
+                ctx.fillStyle = enemy.color;
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                // ملامح بسيطة للوحش
+                ctx.fillStyle = "#000";
+                ctx.fillRect(enemy.x + 5, enemy.y + 8, 5, 5);
+                ctx.fillRect(enemy.x + 20, enemy.y + 8, 5, 5);
+            });
         }
 
-        // دالة التحقق من اصطدام الثعبان بنفسه
-        function collision(head, array) {
-            for (let i = 0; i < array.length; i++) {
-                if (head.x === array[i].x && head.y === array[i].y) return true;
-            }
-            return false;
+        // دالة التحقق من التصادم بين عنصرين
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
         }
 
-        // إعادة تشغيل اللعبة بعد الخسارة
-        function resetGame() {
-            snake = [{x: 10 * scale, y: 10 * scale}];
-            d = "RIGHT";
-            score = 0;
+        function updateStats() {
             document.getElementById("score").innerText = score;
-            startGame();
+            document.getElementById("health").innerText = Math.max(0, health) + "%";
         }
 
-        // بدء اللعبة تلقائياً عند فتح الصفحة
-        startGame();
+        function resetGame() {
+            score = 0;
+            health = 100;
+            lasers = [];
+            enemies = [];
+            player.x = canvas.width / 2 - 20;
+            updateStats();
+            gameInterval = setInterval(gameLoop, 1000 / 60);
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+        }
+
+        // بدء اللعبة
+        gameInterval = setInterval(gameLoop, 1000 / 60);
     </script>
 </body>
 </html>
