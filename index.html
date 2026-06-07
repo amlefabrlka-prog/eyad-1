@@ -3,41 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>موقع ألعاب amlefabrlka الجديد</title>
+    <title>لعبة الثعبان الممتعة 🐍</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background-color: #222; color: #fff; padding: 50px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #28a745; color: white; border: none; border-radius: 50px; margin-top: 10px; }
-        input { padding: 10px; font-size: 16px; text-align: center; width: 80px; margin-bottom: 10px; border-radius: 5px; border: none; }
-        #result { font-size: 20px; font-weight: bold; margin-top: 20px; }
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #1a1a1a; color: #fff; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        h1 { margin-bottom: 5px; color: #4CAF50; font-size: 24px; }
+        #score-board { font-size: 18px; margin-bottom: 10px; }
+        canvas { background-color: #111; border: 4px solid #4CAF50; border-radius: 10px; box-shadow: 0 0 15px rgba(76, 175, 80, 0.5); width: 300px; height: 300px; }
+        .controls { display: grid; grid-template-columns: repeat(3, 60px); grid-gap: 10px; margin-top: 15px; justify-content: center; }
+        .btn { width: 60px; height: 60px; background-color: #333; color: white; border: 2px solid #4CAF50; border-radius: 50%; font-size: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+        .btn:active { background-color: #4CAF50; }
+        .up { grid-column: 2; }
+        .left { grid-column: 1; }
+        .right { grid-column: 3; }
+        .down { grid-column: 2; }
     </style>
 </head>
 <body>
-    <h1>🎮 لعبة تخمين الرقم السري</h1>
-    <p>لقد اخترت رقماً بين 1 و 10، هل يمكنك تخمينه؟</p>
-    
-    <input type="number" id="guess" min="1" max="10"><br>
-    <button onclick="checkGuess()">تخمين</button>
-    
-    <p id="result"></p>
+
+    <h1>🐍 لعبة الثعبان المحترف</h1>
+    <div id="score-board">النقاط: <span id="score">0</span></div>
+
+    <!-- ساحة اللعبة -->
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <!-- أزرار التحكم مخصصة للموبايل -->
+    <div class="controls">
+        <button class="btn up" onclick="changeDirection('UP')">⬆️</button>
+        <button class="btn left" onclick="changeDirection('LEFT')">⬅️</button>
+        <button class="btn right" onclick="changeDirection('RIGHT')">➡️</button>
+        <button class="btn down" onclick="changeDirection('DOWN')">⬇️</button>
+    </div>
 
     <script>
-        const randomNumber = Math.floor(Math.random() * 10) + 1;
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scale = 20;
+        const rows = canvas.height / scale;
+        const columns = canvas.width / scale;
 
-        function checkGuess() {
-            const userGuess = document.getElementById('guess').value;
-            const resultText = document.getElementById('result');
-            
-            if (userGuess == randomNumber) {
-                resultText.innerHTML = "🎉 مبروك! خمنت الرقم الصحيح!";
-                resultText.style.color = "#28a745";
-            } else if (userGuess > randomNumber) {
-                resultText.innerHTML = "❌ الرقم كبير جداً، جرب رقماً أصغر.";
-                resultText.style.color = "#dc3545";
-            } else {
-                resultText.innerHTML = "❌ الرقم صغير جداً، جرب رقماً أكبر.";
-                resultText.style.color = "#dc3545";
-            }
+        let snake = [{x: 10 * scale, y: 10 * scale}];
+        let food = {x: 0, y: 0};
+        let d = "RIGHT";
+        let score = 0;
+        let game;
+
+        // توليد طعام في مكان عشوائي
+        function pickLocation() {
+            food.x = Math.floor(Math.random() * columns) * scale;
+            food.y = Math.floor(Math.random() * rows) * scale;
         }
+
+        // تشغيل اللعبة والسرعة (كلما قل الرقم زادت السرعة)
+        function startGame() {
+            pickLocation();
+            game = setInterval(draw, 120);
+        }
+
+        // توجيه الحركة من أزرار الشاشة
+        function changeDirection(direction) {
+            if (direction === "LEFT" && d !== "RIGHT") d = "LEFT";
+            if (direction === "UP" && d !== "DOWN") d = "UP";
+            if (direction === "RIGHT" && d !== "LEFT") d = "RIGHT";
+            if (direction === "DOWN" && d !== "UP") d = "DOWN";
+        }
+
+        // رسم كل العناصر وتحريكها
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // رسم الطعام
+            ctx.fillStyle = "#FF5722";
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "#FF5722";
+            ctx.fillRect(food.x, food.y, scale, scale);
+            ctx.shadowBlur = 0; // إعادة ضبط التوهج
+
+            // رسم الثعبان
+            for (let i = 0; i < snake.length; i++) {
+                ctx.fillStyle = (i === 0) ? "#2E7D32" : "#4CAF50"; // الرأس أغمق
+                ctx.fillRect(snake[i].x, snake[i].y, scale, scale);
+                ctx.strokeStyle = "#111";
+                ctx.strokeRect(snake[i].x, snake[i].y, scale, scale);
+            }
+
+            // موقع رأس الثعبان الحالي
+            let snakeX = snake[0].x;
+            let snakeY = snake[0].y;
+
+            // تحديد الاتجاه الجديد
+            if (d === "LEFT") snakeX -= scale;
+            if (d === "UP") snakeY -= scale;
+            if (d === "RIGHT") snakeX += scale;
+            if (d === "DOWN") snakeY += scale;
+
+            // إذا أكل الثعبان التفاحة
+            if (snakeX === food.x && snakeY === food.y) {
+                score++;
+                document.getElementById("score").innerText = score;
+                pickLocation();
+            } else {
+                snake.pop(); // حذف الذيل للحفاظ على الطول إذا لم يأكل
+            }
+
+            // إضافة رأس جديد في الاتجاه الجديد
+            let newHead = { x: snakeX, y: snakeY };
+
+            // قوانين الخسارة (ضرب الحائط أو ضرب نفسه)
+            if (snakeX < 0 || snakeX >= canvas.width || snakeY < 0 || snakeY >= canvas.height || collision(newHead, snake)) {
+                clearInterval(game);
+                alert("Game Over! مجموع نقاطك: " + score);
+                resetGame();
+                return;
+            }
+
+            snake.unshift(newHead);
+        }
+
+        // دالة التحقق من اصطدام الثعبان بنفسه
+        function collision(head, array) {
+            for (let i = 0; i < array.length; i++) {
+                if (head.x === array[i].x && head.y === array[i].y) return true;
+            }
+            return false;
+        }
+
+        // إعادة تشغيل اللعبة بعد الخسارة
+        function resetGame() {
+            snake = [{x: 10 * scale, y: 10 * scale}];
+            d = "RIGHT";
+            score = 0;
+            document.getElementById("score").innerText = score;
+            startGame();
+        }
+
+        // بدء اللعبة تلقائياً عند فتح الصفحة
+        startGame();
     </script>
 </body>
 </html>
